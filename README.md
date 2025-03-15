@@ -94,7 +94,7 @@ By integrating multi-step inference, real-time knowledge grounding, and tool- as
 git clone https://github.com/mims-harvard/ToolUniverse.git
 cd ToolUniverse
 python -m pip install . --no-cache-dir
-
+OR
 # Install from pip:
 pip install tooluniverse
 
@@ -103,8 +103,13 @@ pip install tooluniverse
 **Install TxAgent**:
 
 ```
-cd ../
+# Install from source code:
+git clone https://github.com/mims-harvard/TxAgent.git
 python -m pip install . --no-cache-dir
+OR
+# Install from pip:
+pip install txagent
+
 ```
 
 **Run the example**:
