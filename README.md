@@ -1,7 +1,7 @@
 # TxAgent: An AI agent for therapeutic reasoning across a universe of tools
 
 [![ProjectPage](https://img.shields.io/badge/ProjectPage-TxAgent-red)](https://zitniklab.hms.harvard.edu/TxAgent)
-[![PaperLink](https://img.shields.io/badge/PDF-TxAgent-red)]()
+[![PaperLink](https://img.shields.io/badge/Arxiv-TxAgent-red)](https://arxiv.org/pdf/2503.10970)
 [![TxAgent-PIP](https://img.shields.io/badge/Pip-TxAgent-blue)](https://pypi.org/project/txagent/)
 [![ToolUniverse-PIP](https://img.shields.io/badge/Pip-ToolUniverse-blue)](https://pypi.org/project/tooluniverse/)
 [![TxAgent](https://img.shields.io/badge/Code-TxAgent-purple)](https://github.com/mims-harvard/TxAgent)
@@ -143,7 +143,15 @@ Please visit [project page](https://github.com/mims-harvard/TxAgent) for more de
 ## Citation
 
 ```
-
+@misc{gao2025txagent,
+      title={TxAgent: An AI Agent for Therapeutic Reasoning Across a Universe of Tools}, 
+      author={Shanghua Gao and Richard Zhu and Zhenglun Kong and Ayush Noori and Xiaorui Su and Curtis Ginder and Theodoros Tsiligkaridis and Marinka Zitnik},
+      year={2025},
+      eprint={2503.10970},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2503.10970}, 
+}
 ```
 
 ## Contact
