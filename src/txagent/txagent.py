@@ -283,7 +283,6 @@ class TxAgent:
             gradio_history = []
         if function_call_json is not None:
             if isinstance(function_call_json, list):
-                # (Your pre-processing logic here)
                 for i in range(len(function_call_json)):
                     if function_call_json[i]["name"] == 'Finish':
                         special_tool_call = 'Finish'
@@ -587,7 +586,6 @@ class TxAgent:
         elif len(possible_final_answer) > 1:
             if possible_final_answer[1] == ':':
                 choice = possible_final_answer[0]
-                # print(choice, answer.split("\n")[-1])
                 if choice in ['A', 'B', 'C', 'D', 'E']:
                     print("choice", choice)
                     return choice
@@ -808,90 +806,63 @@ Generate **one summarized sentence** about "function calls' responses" with nece
             checker = ReasoningTraceChecker(
                 message, conversation, init_index=len(conversation))
 
-        # try:
-        while next_round and current_round < max_round:
-            current_round += 1
-            if len(last_outputs) > 0:
-                function_call_messages, picked_tools_prompt, special_tool_call, current_gradio_history = yield from self.run_function_call_stream(
-                    last_outputs, return_message=True,
-                    existing_tools_prompt=picked_tools_prompt,
-                    message_for_call_agent=message,
-                    call_agent=call_agent,
-                    call_agent_level=call_agent_level,
-                    temperature=temperature)
-                history.extend(current_gradio_history)
-                if special_tool_call == 'Finish':
-                    yield history
-                    next_round = False
-                    conversation.extend(function_call_messages)
-                    return function_call_messages[0]['content']
-                elif special_tool_call == 'RequireClarification' or special_tool_call == 'DirectResponse':
-                    history.append(
-                        ChatMessage(role="assistant", content=history[-1].content))
-                    yield history
-                    next_round = False
-                    return history[-1].content
-                if (self.enable_summary or token_overflow) and not call_agent:
-                    if token_overflow:
-                        print("token_overflow, using summary")
-                    enable_summary = True
-                last_status = self.function_result_summary(
-                    conversation, status=last_status,
-                    enable_summary=enable_summary)
-                if function_call_messages is not None:
-                    conversation.extend(function_call_messages)
-                    formated_md_function_call_messages = tool_result_format(
-                        function_call_messages)
-                    yield history
-                else:
-                    next_round = False
-                    conversation.extend(
-                        [{"role": "assistant", "content": ''.join(last_outputs)}])
-                    return ''.join(last_outputs).replace("</s>", "")
-            if self.enable_checker:
-                good_status, wrong_info = checker.check_conversation()
-                if not good_status:
-                    next_round = False
-                    print("Internal error in reasoning: " + wrong_info)
-                    break
-            last_outputs = []
-            last_outputs_str, token_overflow = self.llm_infer(
-                messages=conversation,
-                temperature=temperature,
-                tools=picked_tools_prompt,
-                skip_special_tokens=False,
-                max_new_tokens=max_new_tokens,
-                max_token=max_token,
-                seed=seed,
-                check_token_status=True)
-            last_thought = last_outputs_str.split("[TOOL_CALLS]")[0]
-            for each in history:
-                if each.metadata is not None:
-                    each.metadata['status'] = 'done'
-            if '[FinalAnswer]' in last_thought:
-                final_thought, final_answer = last_thought.split(
-                    '[FinalAnswer]')
-                history.append(
-                    ChatMessage(role="assistant",
-                                content=final_thought.strip())
-                )
-                yield history
-                history.append(
-                    ChatMessage(
-                        role="assistant", content="**Answer**:\n"+final_answer.strip())
-                )
-                yield history
-            else:
-                history.append(ChatMessage(
-                    role="assistant", content=last_thought))
-                yield history
-
-            last_outputs.append(last_outputs_str)
-
-        if next_round:
-            if self.force_finish:
-                last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
-                    conversation, temperature, max_new_tokens, max_token)
+        try:
+            while next_round and current_round < max_round:
+                current_round += 1
+                if len(last_outputs) > 0:
+                    function_call_messages, picked_tools_prompt, special_tool_call, current_gradio_history = yield from self.run_function_call_stream(
+                        last_outputs, return_message=True,
+                        existing_tools_prompt=picked_tools_prompt,
+                        message_for_call_agent=message,
+                        call_agent=call_agent,
+                        call_agent_level=call_agent_level,
+                        temperature=temperature)
+                    history.extend(current_gradio_history)
+                    if special_tool_call == 'Finish':
+                        yield history
+                        next_round = False
+                        conversation.extend(function_call_messages)
+                        return function_call_messages[0]['content']
+                    elif special_tool_call == 'RequireClarification' or special_tool_call == 'DirectResponse':
+                        history.append(
+                            ChatMessage(role="assistant", content=history[-1].content))
+                        yield history
+                        next_round = False
+                        return history[-1].content
+                    if (self.enable_summary or token_overflow) and not call_agent:
+                        if token_overflow:
+                            print("token_overflow, using summary")
+                        enable_summary = True
+                    last_status = self.function_result_summary(
+                        conversation, status=last_status,
+                        enable_summary=enable_summary)
+                    if function_call_messages is not None:
+                        conversation.extend(function_call_messages)
+                        formated_md_function_call_messages = tool_result_format(
+                            function_call_messages)
+                        yield history
+                    else:
+                        next_round = False
+                        conversation.extend(
+                            [{"role": "assistant", "content": ''.join(last_outputs)}])
+                        return ''.join(last_outputs).replace("</s>", "")
+                if self.enable_checker:
+                    good_status, wrong_info = checker.check_conversation()
+                    if not good_status:
+                        next_round = False
+                        print("Internal error in reasoning: " + wrong_info)
+                        break
+                last_outputs = []
+                last_outputs_str, token_overflow = self.llm_infer(
+                    messages=conversation,
+                    temperature=temperature,
+                    tools=picked_tools_prompt,
+                    skip_special_tokens=False,
+                    max_new_tokens=max_new_tokens,
+                    max_token=max_token,
+                    seed=seed,
+                    check_token_status=True)
+                last_thought = last_outputs_str.split("[TOOL_CALLS]")[0]
                 for each in history:
                     if each.metadata is not None:
                         each.metadata['status'] = 'done'
@@ -908,32 +879,59 @@ Generate **one summarized sentence** about "function calls' responses" with nece
                             role="assistant", content="**Answer**:\n"+final_answer.strip())
                     )
                     yield history
-            else:
-                yield "The number of rounds exceeds the maximum limit!"
+                else:
+                    history.append(ChatMessage(
+                        role="assistant", content=last_thought))
+                    yield history
 
-        # except Exception as e:
-        #     print(f"Error: {e}")
-        #     if self.force_finish:
-        #         last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
-        #             conversation,
-        #             temperature,
-        #             max_new_tokens,
-        #             max_token)
-        #         for each in history:
-        #             if each.metadata is not None:
-        #                 each.metadata['status'] = 'done'
-        #         if '[FinalAnswer]' in last_thought or '"name": "Finish",' in last_outputs_str:
-        #             final_thought, final_answer = last_thought.split(
-        #                 '[FinalAnswer]')
-        #             history.append(
-        #                 ChatMessage(role="assistant",
-        #                             content=final_thought.strip())
-        #             )
-        #             yield history
-        #             history.append(
-        #                 ChatMessage(
-        #                     role="assistant", content="**Answer**:\n"+final_answer.strip())
-        #             )
-        #             yield history
-        #     else:
-        #         return None
+                last_outputs.append(last_outputs_str)
+
+            if next_round:
+                if self.force_finish:
+                    last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
+                        conversation, temperature, max_new_tokens, max_token)
+                    for each in history:
+                        if each.metadata is not None:
+                            each.metadata['status'] = 'done'
+                    if '[FinalAnswer]' in last_thought:
+                        final_thought, final_answer = last_thought.split(
+                            '[FinalAnswer]')
+                        history.append(
+                            ChatMessage(role="assistant",
+                                        content=final_thought.strip())
+                        )
+                        yield history
+                        history.append(
+                            ChatMessage(
+                                role="assistant", content="**Answer**:\n"+final_answer.strip())
+                        )
+                        yield history
+                else:
+                    yield "The number of rounds exceeds the maximum limit!"
+
+        except Exception as e:
+            print(f"Error: {e}")
+            if self.force_finish:
+                last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
+                    conversation,
+                    temperature,
+                    max_new_tokens,
+                    max_token)
+                for each in history:
+                    if each.metadata is not None:
+                        each.metadata['status'] = 'done'
+                if '[FinalAnswer]' in last_thought or '"name": "Finish",' in last_outputs_str:
+                    final_thought, final_answer = last_thought.split(
+                        '[FinalAnswer]')
+                    history.append(
+                        ChatMessage(role="assistant",
+                                    content=final_thought.strip())
+                    )
+                    yield history
+                    history.append(
+                        ChatMessage(
+                            role="assistant", content="**Answer**:\n"+final_answer.strip())
+                    )
+                    yield history
+            else:
+                return None
