@@ -358,12 +358,12 @@ class TxAgent:
         else:
             return revised_messages, existing_tools_prompt, special_tool_call
 
-    def get_answer_based_on_unfinished_reasoning(self, conversation, temperature, max_new_tokens, max_token, outputs=None):
+    def get_answer_based_on_unfinished_reasoning(self, conversation, temperature, max_new_tokens, max_token, outputs=None, return_full_thought=False):
         if conversation[-1]['role'] == 'assisant':
             conversation.append(
                 {'role': 'tool', 'content': 'Errors happen during the function call, please come up with the final answer with the current information.'})
         finish_tools_prompt = self.add_finish_tools([])
-
+        final_thought = 'Since I cannot continue reasoning, I will provide the final answer based on the current information and general knowledge.\n\n[FinalAnswer]'
         last_outputs_str = self.llm_infer(messages=conversation,
                                           temperature=temperature,
                                           tools=finish_tools_prompt,
@@ -371,6 +371,8 @@ class TxAgent:
                                           skip_special_tokens=True,
                                           max_new_tokens=max_new_tokens, max_token=max_token)
         print(last_outputs_str)
+        if return_full_thought:
+            return final_thought+last_outputs_str
         return last_outputs_str
 
     def run_multistep_agent(self, message: str,
@@ -886,28 +888,26 @@ Generate **one summarized sentence** about "function calls' responses" with nece
 
                 last_outputs.append(last_outputs_str)
 
-            if next_round:
-                if self.force_finish:
-                    last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
-                        conversation, temperature, max_new_tokens, max_token)
-                    for each in history:
-                        if each.metadata is not None:
-                            each.metadata['status'] = 'done'
-                    if '[FinalAnswer]' in last_thought:
-                        final_thought, final_answer = last_thought.split(
-                            '[FinalAnswer]')
-                        history.append(
-                            ChatMessage(role="assistant",
-                                        content=final_thought.strip())
-                        )
-                        yield history
-                        history.append(
-                            ChatMessage(
-                                role="assistant", content="**Answer**:\n"+final_answer.strip())
-                        )
-                        yield history
-                else:
-                    yield "The number of rounds exceeds the maximum limit!"
+            if self.force_finish:
+                last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
+                    conversation, temperature, max_new_tokens, max_token, return_full_thought=True)
+                for each in history:
+                    if each.metadata is not None:
+                        each.metadata['status'] = 'done'
+
+                final_thought, final_answer = last_outputs_str.split('[FinalAnswer]')
+                history.append(
+                    ChatMessage(role="assistant",
+                                content=final_thought.strip())
+                )
+                yield history
+                history.append(
+                    ChatMessage(
+                        role="assistant", content="**Answer**:\n"+final_answer.strip())
+                )
+                yield history
+            else:
+                yield "The number of rounds exceeds the maximum limit!"
 
         except Exception as e:
             print(f"Error: {e}")
@@ -916,22 +916,23 @@ Generate **one summarized sentence** about "function calls' responses" with nece
                     conversation,
                     temperature,
                     max_new_tokens,
-                    max_token)
+                    max_token,
+                    return_full_thought=True)
                 for each in history:
                     if each.metadata is not None:
                         each.metadata['status'] = 'done'
-                if '[FinalAnswer]' in last_thought or '"name": "Finish",' in last_outputs_str:
-                    final_thought, final_answer = last_thought.split(
-                        '[FinalAnswer]')
-                    history.append(
-                        ChatMessage(role="assistant",
-                                    content=final_thought.strip())
-                    )
-                    yield history
-                    history.append(
-                        ChatMessage(
-                            role="assistant", content="**Answer**:\n"+final_answer.strip())
-                    )
-                    yield history
+
+                final_thought, final_answer = last_outputs_str.split(
+                    '[FinalAnswer]')
+                history.append(
+                    ChatMessage(role="assistant",
+                                content=final_thought.strip())
+                )
+                yield history
+                history.append(
+                    ChatMessage(
+                        role="assistant", content="**Answer**:\n"+final_answer.strip())
+                )
+                yield history
             else:
                 return None
