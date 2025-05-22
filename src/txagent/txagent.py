@@ -78,7 +78,11 @@ class TxAgent:
                 return f"The model {model_name} is already loaded."
             self.model_name = model_name
 
-        self.model = LLM(model=self.model_name)
+        self.model = LLM(
+            model=self.model_name,
+            tensor_parallel_size=2,
+            distributed_executor_backend="mp",
+        )
         self.chat_template = Template(self.model.get_tokenizer().chat_template)
         self.tokenizer = self.model.get_tokenizer()
 
@@ -449,8 +453,16 @@ class TxAgent:
         else:
             return revised_messages, existing_tools_prompt, special_tool_call
 
-    def get_answer_based_on_unfinished_reasoning(self, conversation, temperature, max_new_tokens, max_token, outputs=None, return_full_thought=False):
-        if conversation[-1]['role'] == 'assisant':
+    def get_answer_based_on_unfinished_reasoning(
+        self,
+        conversation,
+        temperature,
+        max_new_tokens,
+        max_token,
+        outputs=None,
+        return_full_thought=False,
+    ):
+        if conversation[-1]["role"] == "assisant":
             conversation.append(
                 {
                     "role": "tool",
@@ -458,16 +470,19 @@ class TxAgent:
                 }
             )
         finish_tools_prompt = self.add_finish_tools([])
-        final_thought = 'Since I cannot continue reasoning, I will provide the final answer based on the current information and general knowledge.\n\n[FinalAnswer]'
-        last_outputs_str = self.llm_infer(messages=conversation,
-                                          temperature=temperature,
-                                          tools=finish_tools_prompt,
-                                          output_begin_string='Since I cannot continue reasoning, I will provide the final answer based on the current information and general knowledge.\n\n[FinalAnswer]',
-                                          skip_special_tokens=True,
-                                          max_new_tokens=max_new_tokens, max_token=max_token)
+        final_thought = "Since I cannot continue reasoning, I will provide the final answer based on the current information and general knowledge.\n\n[FinalAnswer]"
+        last_outputs_str = self.llm_infer(
+            messages=conversation,
+            temperature=temperature,
+            tools=finish_tools_prompt,
+            output_begin_string="Since I cannot continue reasoning, I will provide the final answer based on the current information and general knowledge.\n\n[FinalAnswer]",
+            skip_special_tokens=True,
+            max_new_tokens=max_new_tokens,
+            max_token=max_token,
+        )
         print(last_outputs_str)
         if return_full_thought:
-            return final_thought+last_outputs_str
+            return final_thought + last_outputs_str
         return last_outputs_str
 
     def run_multistep_agent(
@@ -1075,20 +1090,25 @@ Generate **one summarized sentence** about "function calls' responses" with nece
 
             if self.force_finish:
                 last_outputs_str = self.get_answer_based_on_unfinished_reasoning(
-                    conversation, temperature, max_new_tokens, max_token, return_full_thought=True)
+                    conversation,
+                    temperature,
+                    max_new_tokens,
+                    max_token,
+                    return_full_thought=True,
+                )
                 for each in history:
                     if each.metadata is not None:
-                        each.metadata['status'] = 'done'
+                        each.metadata["status"] = "done"
 
-                final_thought, final_answer = last_outputs_str.split('[FinalAnswer]')
+                final_thought, final_answer = last_outputs_str.split("[FinalAnswer]")
                 history.append(
-                    ChatMessage(role="assistant",
-                                content=final_thought.strip())
+                    ChatMessage(role="assistant", content=final_thought.strip())
                 )
                 yield history
                 history.append(
                     ChatMessage(
-                        role="assistant", content="**Answer**:\n"+final_answer.strip())
+                        role="assistant", content="**Answer**:\n" + final_answer.strip()
+                    )
                 )
                 yield history
             else:
@@ -1102,21 +1122,21 @@ Generate **one summarized sentence** about "function calls' responses" with nece
                     temperature,
                     max_new_tokens,
                     max_token,
-                    return_full_thought=True)
+                    return_full_thought=True,
+                )
                 for each in history:
                     if each.metadata is not None:
-                        each.metadata['status'] = 'done'
+                        each.metadata["status"] = "done"
 
-                final_thought, final_answer = last_outputs_str.split(
-                    '[FinalAnswer]')
+                final_thought, final_answer = last_outputs_str.split("[FinalAnswer]")
                 history.append(
-                    ChatMessage(role="assistant",
-                                content=final_thought.strip())
+                    ChatMessage(role="assistant", content=final_thought.strip())
                 )
                 yield history
                 history.append(
                     ChatMessage(
-                        role="assistant", content="**Answer**:\n"+final_answer.strip())
+                        role="assistant", content="**Answer**:\n" + final_answer.strip()
+                    )
                 )
                 yield history
             else:
