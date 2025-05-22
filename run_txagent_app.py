@@ -5,7 +5,10 @@ from txagent import TxAgent
 import spaces
 import gradio as gr
 import os
+
 import os
+
+os.environ["VLLM_USE_V1"] = "0" # Disable v1 API for now since it does not support logits processors.
 
 # Determine the directory where the current file is located
 current_dir = os.path.dirname(os.path.abspath(__file__))
