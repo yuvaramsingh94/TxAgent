@@ -42,7 +42,7 @@ class TxAgent:
         self.rag_model_name = rag_model_name
         self.tool_files_dict = tool_files_dict
         self.model = None
-        self.rag_model = ToolRAGModel(rag_model_name)
+        # self.rag_model = ToolRAGModel(rag_model_name)
         self.tooluniverse = None
         # self.tool_desc = None
         self.prompt_multi_step = "You are a helpful assistant that will solve problems through detailed, step-by-step reasoning and actions based on your reasoning. Typically, your actions will use the provided functions. You have access to the following functions."
@@ -81,8 +81,13 @@ class TxAgent:
         self.model = LLM(
             model=self.model_name,
             tensor_parallel_size=2,
-            distributed_executor_backend="mp",
+            dtype="float32",
+            max_model_len=8192,
+            # distributed_executor_backend="mp",
         )
+        ## Load RAG model after the main agent
+        self.rag_model = ToolRAGModel(self.rag_model_name, device="cuda:2")
+
         self.chat_template = Template(self.model.get_tokenizer().chat_template)
         self.tokenizer = self.model.get_tokenizer()
 

@@ -250,7 +250,8 @@ with gr.Blocks(css=css) as demo:
                     with gr.Accordion("⚙️ Functional Parameters", open=False):
                         # Create Gradio components for parameter inputs
                         enable_finish = gr.Checkbox(
-                            label="Enable Finish", value=True)
+                            label="Enable Finitorch.cuda.empty_cache()
+sh", value=True)
                         enable_rag = gr.Checkbox(
                             label="Enable RAG", value=True)
                         enable_summary = gr.Checkbox(
@@ -267,7 +268,8 @@ with gr.Blocks(css=css) as demo:
                         summary_context_length = gr.Number(
                             label="Summary Context Length", value=None)
                         force_finish = gr.Checkbox(
-                            label="Force FinalAnswer", value=True)
+                            label="Force Finaltorch.cuda.empty_cache()
+Answer", value=True)
                         seed = gr.Number(label="Seed", value=100)
                         # Button to submit and update parameters
                         submit_btn = gr.Button("Update Parameters")
